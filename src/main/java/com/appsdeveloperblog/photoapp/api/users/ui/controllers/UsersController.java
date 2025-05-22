@@ -74,24 +74,28 @@ public class UsersController {
 	public ResponseEntity<UserResponseModel> getUser(@PathVariable("userId") String userId,
 			@RequestHeader("Authorization") String authorization,
 			@RequestParam(value = "fields", required = false) String fields) {
+		try {
+			UserDto userDto = usersService.getUserByUserId(userId);
 
-		UserDto userDto = usersService.getUserByUserId(userId);
+			UserResponseModel returnValue = new ModelMapper().map(userDto, UserResponseModel.class);
 
-		UserResponseModel returnValue = new ModelMapper().map(userDto, UserResponseModel.class);
-
-		// Include albums if requested
-		if (fields != null) {
-			String[] includeFields = fields.split(",");
-			for (String field : includeFields) {
-				if (field.trim().equalsIgnoreCase("albums")) {
-					List<AlbumResponseModel> albums = usersService.getUserAlbums(authorization);
-					returnValue.setAlbums(albums);
-					break;
+			// Include albums if requested
+			if (fields != null) {
+				String[] includeFields = fields.split(",");
+				for (String field : includeFields) {
+					if (field.trim().equalsIgnoreCase("albums")) {
+						List<AlbumResponseModel> albums = usersService.getUserAlbums(authorization);
+						returnValue.setAlbums(albums);
+						break;
+					}
 				}
 			}
-		}
 
-		return ResponseEntity.status(HttpStatus.OK).body(returnValue);
+			return ResponseEntity.status(HttpStatus.OK).body(returnValue);
+		} catch (Exception e) {
+			log.error("Error getting authorization header: " + e.getMessage());
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+		}
 	}
 
 	@GetMapping()
